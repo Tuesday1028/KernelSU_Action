@@ -1,6 +1,6 @@
 **中文** | [English](README_EN.md)
 
-# KernelSU Action For Begonia
+# KernelSU Action
 
 用于 Non-GKI Kernel 的 Action，具有一定的普遍性，需要了解内核及 Android 的相关知识得以运用。
 
@@ -23,19 +23,19 @@ Fork 本仓库到你的储存库然后按照以下内容编辑config.env，之�
 
 填写你的内核仓库地址
 
-例如: https://github.com/begonia-dev/android_kernel_xiaomi_mt6785
+例如: https://github.com/Tuesday1028/android_kernel_sony_sm8250
 
 ### Kernel Source Branch
 
 填写你的内核分支
 
-例如: 13.0
+例如: lineage-22.1
 
 ### Kernel defconfig
 
 填写你的内核配置文件名
 
-例如: begonia_user_defconfig
+例如: pdx206_defconfig
 
 ### Target arch
 
