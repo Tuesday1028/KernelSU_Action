@@ -33,6 +33,7 @@ jobs:
         echo "ENABLE_SUSFS=$(cat config.env | grep "ENABLE_SUSFS" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
         echo "APPLY_SUSFS_PATCH=$(cat config.env | grep "APPLY_SUSFS_PATCH" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
         echo "SUSFS_SOURCE_BRANCH=$(cat config.env | grep "SUSFS_SOURCE_BRANCH" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
+        echo "USE_LOCAL_SUSFS_PATCH=$(cat config.env | grep "USE_LOCAL_SUSFS_PATCH" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
 
     - name: Setup build kernel environment
       run: |
@@ -96,9 +97,12 @@ jobs:
         cp ./kernel_patches/fs/* $GITHUB_WORKSPACE/kernel_workspace/android-kernel/fs/
         cp ./kernel_patches/include/linux/* $GITHUB_WORKSPACE/kernel_workspace/android-kernel/include/linux/
         if [ ${{env.APPLY_SUSFS_PATCH}} ]; then
-          cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-          patch -p1 < $GITHUB_WORKSPACE/50_add_susfs_in_kernel-4.19.patch
-          # patch -p1 < ../susfs4ksu/kernel_patches/50_add_susfs_in_${{ env.SUSFS_SOURCE_BRANCH }}.patch
+            cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+            if [ ${{env.USE_LOCAL_SUSFS_PATCH}} ]; then
+                patch -p1 < $GITHUB_WORKSPACE/50_add_susfs_${{ env.SUSFS_SOURCE_BRANCH }}.patch
+            else
+                patch -p1 < ../susfs4ksu/kernel_patches/50_add_susfs_in_${{ env.SUSFS_SOURCE_BRANCH }}.patch
+            fi
         fi
 
     - name: Setup Configuration for Kernel
