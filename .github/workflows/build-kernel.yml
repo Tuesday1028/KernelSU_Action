@@ -30,6 +30,8 @@ jobs:
         echo "SOURCE_BOOT_IMAGE=$(cat config.env | grep "SOURCE_BOOT_IMAGE" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
         echo "DISABLE_CC_WERROR=$(cat config.env | grep "DISABLE_CC_WERROR" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
         echo "APPLY_KSU_PATCH=$(cat config.env | grep "APPLY_KSU_PATCH" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
+        echo "ENABLE_SUSFS=$(cat config.env | grep "ENABLE_SUSFS" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
+        echo "APPLY_SUSFS_PATCH=$(cat config.env | grep "APPLY_SUSFS_PATCH" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
 
     - name: Setup build kernel environment
       run: |
@@ -71,13 +73,31 @@ jobs:
             echo "Source boot image is empty"
         fi
   
-    - name: Setup KernelSU Next SuSFS
+    - name: Setup KernelSU Next
       if: env.ENABLE_KERNELSU == 'true'
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-        curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -s next-susfs -
-        KSU_VERSION=$(cd KernelSU-Next && expr $(/usr/bin/git rev-list --count HEAD) + 10200)
+        if [ ${{ env.ENABLE_SUSFS }} = true ]; then
+            curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -s next-susfs -
+            KSU_VERSION=$(cd KernelSU-Next && expr $(/usr/bin/git rev-list --count HEAD) + 10200)
+        else
+            curl -LSs "https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh" | bash -
+            KSU_VERSION=$(cd KernelSU-Next && expr $(/usr/bin/git rev-list --count HEAD) + 10200)
+        fi
         echo "UPLOADNAME=-KernelSU_$KSU_VERSION" >> $GITHUB_ENV
+
+    - name: Setup SuSFS
+      if: env.ENABLE_SUSFS == 'true'
+      run: |
+        cd $GITHUB_WORKSPACE/kernel_workspace
+        git clone https://gitlab.com/simonpunk/susfs4ksu.git -b ${{ env.SUSFS_SOURCE_BRANCH }} susfs4ksu --depth=1
+        cd $GITHUB_WORKSPACE/kernel_workspace/susfs4ksu
+        cp ./kernel_patches/fs/* $GITHUB_WORKSPACE/kernel_workspace/android-kernel/fs/
+        cp ./kernel_patches/include/linux/* $GITHUB_WORKSPACE/kernel_workspace/android-kernel/include/linux/
+        if [ ${{env.APPLY_SUSFS_PATCH}} ]; then
+          cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
+          patch -p1 < ../susfs4ksu/kernel_patches/50_add_susfs_in_${{ env.SUSFS_SOURCE_BRANCH }}.patch
+        fi
 
     - name: Setup Configuration for Kernel
       run: |
@@ -104,6 +124,21 @@ jobs:
             echo "CONFIG_HAVE_KPROBES=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
             echo "CONFIG_KPROBE_EVENTS=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         fi
+        if [ ${{ env.ADD_SUSFS_CONFIG }} = true ]; then
+            echo "CONFIG_KSU_SUSFS=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+            echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
+        fi
         if [ ${{ env.ADD_OVERLAYFS_CONFIG }} = true ]; then
             echo "CONFIG_OVERLAY_FS=y" >> arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
         fi
@@ -124,7 +159,7 @@ jobs:
         export ARCH=${{ env.ARCH }}
         export SUBARCH=${{ env.ARCH }}
         export KBUILD_COMPILER_STRING="$(clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
-        export KBUILD_BUILD_HOST=WuxinBuilds
+        export KBUILD_BUILD_HOST=Tuesday1028
         export KBUILD_BUILD_USER=$(echo ${{ github.actor }} | tr A-Z a-z)
         make -j$(nproc --all) O=out ARCH=arm64 savedefconfig
         cp -f out/defconfig arch/${{ env.ARCH }}/configs/${{ env.KERNEL_CONFIG }}
