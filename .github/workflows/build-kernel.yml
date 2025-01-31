@@ -99,7 +99,7 @@ jobs:
         if [ ${{env.APPLY_SUSFS_PATCH}} ]; then
             cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
             if [ ${{env.USE_LOCAL_SUSFS_PATCH}} ]; then
-                patch -p1 < $GITHUB_WORKSPACE/50_add_susfs_${{ env.SUSFS_SOURCE_BRANCH }}.patch
+                patch -p1 < $GITHUB_WORKSPACE/50_add_susfs_in_${{ env.SUSFS_SOURCE_BRANCH }}.patch
             else
                 patch -p1 < ../susfs4ksu/kernel_patches/50_add_susfs_in_${{ env.SUSFS_SOURCE_BRANCH }}.patch
             fi
