@@ -958,12 +958,15 @@ index b15a4719a8c8..fb46ebd7e767 100644
 --- a/fs/proc/task_mmu.c
 +++ b/fs/proc/task_mmu.c
 @@ -20,6 +20,9 @@
- #include <linux/uaccess.h>
  #include <linux/pkeys.h>
  #include <linux/mm_inline.h>
+ #include <linux/ctype.h>
 +#ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
 +#include <linux/susfs_def.h>
 +#endif
+ 
+ #include <asm/elf.h>
+ #include <asm/tlb.h>
 @@ -347,6 +350,10 @@ static void show_vma_header_prefix(struct seq_file *m,
  	seq_putc(m, ' ');
  }
