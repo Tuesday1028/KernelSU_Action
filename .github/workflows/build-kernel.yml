@@ -97,7 +97,8 @@ jobs:
         cp ./kernel_patches/include/linux/* $GITHUB_WORKSPACE/kernel_workspace/android-kernel/include/linux/
         if [ ${{env.APPLY_SUSFS_PATCH}} ]; then
           cd $GITHUB_WORKSPACE/kernel_workspace/android-kernel
-          patch -p1 < ../susfs4ksu/kernel_patches/50_add_susfs_in_${{ env.SUSFS_SOURCE_BRANCH }}.patch
+          patch -p1 < $GITHUB_WORKSPACE/50_add_susfs_in_kernel-4.19.patch
+          # patch -p1 < ../susfs4ksu/kernel_patches/50_add_susfs_in_${{ env.SUSFS_SOURCE_BRANCH }}.patch
         fi
 
     - name: Setup Configuration for Kernel
