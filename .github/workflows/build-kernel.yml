@@ -34,6 +34,7 @@ jobs:
         echo "APPLY_SUSFS_PATCH=$(cat config.env | grep "APPLY_SUSFS_PATCH" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
         echo "SUSFS_SOURCE_BRANCH=$(cat config.env | grep "SUSFS_SOURCE_BRANCH" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
         echo "USE_LOCAL_SUSFS_PATCH=$(cat config.env | grep "USE_LOCAL_SUSFS_PATCH" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
+        echo "ADD_SUSFS_CONFIG=$(cat config.env | grep "ADD_SUSFS_CONFIG" | head -n 1 | cut -d "=" -f 2)" >> $GITHUB_ENV
 
     - name: Setup build kernel environment
       run: |
